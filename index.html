@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#07060b" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="VELA" />
+  <title>VELA — Paper Desk</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon-192.png" />
+  <link rel="apple-touch-icon" href="./icon-180.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #07060b;
+      --text: #f4f2fb;
+      --muted: #9a96ad;
+      --line: rgba(255, 255, 255, 0.08);
+      --sol: #14f195;
+      --loss: #ff5d73;
+      --phantom: #ab9ff2;
+    }
+    html, body { background: var(--ink); color: var(--text); }
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      font-family: Outfit, system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    button, input, select { font: inherit; }
+    button, a { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    :focus-visible { outline: 2px solid var(--phantom); outline-offset: 2px; }
+    .orb {
+      position: fixed;
+      width: 420px;
+      height: 420px;
+      border-radius: 999px;
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-a { top: -140px; left: -80px; background: #6d28d9; opacity: 0.38; }
+    .orb-b { right: -120px; bottom: -180px; background: #0f766e; opacity: 0.32; }
+    .orb-c { top: 38%; left: 42%; width: 280px; height: 280px; background: #1d4ed8; opacity: 0.18; }
+    .glass {
+      background: rgba(14, 14, 20, 0.72);
+      border: 1px solid var(--line);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(18px);
+    }
+    .wallet-card {
+      background: linear-gradient(120deg, rgba(255, 93, 115, 0.85), rgba(247, 209, 84, 0.75), rgba(20, 241, 149, 0.85), rgba(124, 140, 255, 0.9), rgba(171, 159, 242, 0.95));
+      padding: 1px;
+      border-radius: 28px;
+    }
+    .wallet-inner {
+      border-radius: 27px;
+      background: rgba(10, 10, 16, 0.9);
+      backdrop-filter: blur(18px);
+    }
+    .logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      color: #140c24;
+      background: linear-gradient(160deg, #efe9ff, #ab9ff2 45%, #14f195);
+    }
+    .field {
+      width: 100%;
+      height: 44px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      padding: 0 12px;
+      font-size: 16px;
+    }
+    .field::placeholder { color: #6f6b80; }
+    .field:focus {
+      outline: none;
+      border-color: rgba(171, 159, 242, 0.75);
+      box-shadow: 0 0 0 3px rgba(171, 159, 242, 0.18);
+    }
+    .side-btn, .type-btn, .tool, .nav-btn, .tab, .mini, .chip-btn, .tag, .market-chip {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03);
+      color: #d9d6e8;
+    }
+    .side-btn, .type-btn, .tool, .tab, .mini, .chip-btn, .tag {
+      border-radius: 12px;
+    }
+    .side-btn { height: 44px; font-weight: 600; }
+    .type-btn, .tab, .tool { height: 36px; font-size: 13px; }
+    .mini, .chip-btn { height: 32px; padding: 0 10px; font-size: 12px; }
+    .chip-btn { border-radius: 12px; }
+    .side-btn.is-on[data-side="long"] {
+      background: linear-gradient(180deg, #d8fff1, #14f195);
+      color: #042117;
+      border-color: transparent;
+    }
+    .side-btn.is-on[data-side="short"] {
+      background: linear-gradient(180deg, #ffd0d8, #ff5d73);
+      color: #2a0610;
+      border-color: transparent;
+    }
+    #submitOrder {
+      height: 48px;
+      border: 0;
+      border-radius: 16px;
+      font-weight: 700;
+    }
+    #submitOrder.long { background: linear-gradient(180deg, #d8fff1, #14f195); color: #042117; }
+    #submitOrder.short { background: linear-gradient(180deg, #ffd0d8, #ff5d73); color: #2a0610; }
+    #submitOrder:disabled, #caSubmit:disabled { opacity: 0.55; }
+    #caSubmit {
+      height: 44px;
+      border: 0;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #d8fff1, #14f195);
+      color: #042117;
+      font-weight: 700;
+    }
+    .type-btn.is-on, .tool.is-on, .tab.is-on, .nav-btn.is-on, .mini.is-on {
+      background: rgba(171, 159, 242, 0.18);
+      border-color: rgba(171, 159, 242, 0.55);
+      color: var(--text);
+    }
+    .tag { padding: 4px 8px; font-size: 12px; }
+    .tag.is-on {
+      background: rgba(20, 241, 149, 0.12);
+      border-color: rgba(20, 241, 149, 0.45);
+      color: #d8fff1;
+    }
+    .tag-static {
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      padding: 2px 8px;
+      font-size: 11px;
+      color: #d9d6e8;
+    }
+    .market-chip {
+      min-width: 112px;
+      border-radius: 16px;
+      padding: 8px 10px;
+      text-align: left;
+    }
+    .market-chip.is-on {
+      border-color: rgba(171, 159, 242, 0.7);
+      background: rgba(171, 159, 242, 0.14);
+    }
+    .pill {
+      border-radius: 999px;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .pill.long { background: var(--sol); color: #042117; }
+    .pill.short { background: #ff8fa3; color: #2a0610; }
+    .pill.reason { background: rgba(255, 255, 255, 0.06); color: #d9d6e8; letter-spacing: 0; text-transform: none; font-weight: 600; }
+    .item {
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 16px;
+      padding: 12px;
+    }
+    .heat-cell, .heat-pad {
+      aspect-ratio: 1;
+      width: 100%;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+      font-size: 11px;
+    }
+    .heat-cell { border: 1px solid rgba(255, 255, 255, 0.04); }
+    .heat-cell.is-today { box-shadow: inset 0 0 0 1px rgba(171, 159, 242, 0.9); }
+    .heat-cell.is-on { box-shadow: inset 0 0 0 1.5px #f4f2fb; }
+    .stat {
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: rgba(255, 255, 255, 0.03);
+      padding: 12px;
+    }
+    #chartWrap { height: min(68dvh, 640px); min-height: 280px; }
+    @media (min-width: 1024px) {
+      #chartWrap { height: 620px; min-height: 360px; }
+    }
+    #chart, #overlay { position: absolute; inset: 0; }
+    #overlay { width: 100%; height: 100%; z-index: 5; pointer-events: none; }
+    #overlay.is-drawing { pointer-events: auto; cursor: crosshair; touch-action: none; }
+    #connDot {
+      width: 8px;
+      height: 8px;
+      border-radius: 99px;
+      background: #f7d154;
+      box-shadow: 0 0 0 4px rgba(247, 209, 84, 0.15);
+    }
+    #connDot[data-kind="ok"] { background: var(--sol); box-shadow: 0 0 0 4px rgba(20, 241, 149, 0.15); }
+    #connDot[data-kind="bad"] { background: var(--loss); box-shadow: 0 0 0 4px rgba(255, 93, 115, 0.14); }
+    #installHint {
+      position: fixed;
+      z-index: 60;
+      left: max(12px, env(safe-area-inset-left));
+      right: max(12px, env(safe-area-inset-right));
+      bottom: calc(68px + env(safe-area-inset-bottom));
+      padding: 14px;
+    }
+    #toasts {
+      position: fixed;
+      right: max(12px, env(safe-area-inset-right));
+      bottom: calc(76px + env(safe-area-inset-bottom));
+      z-index: 70;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: min(360px, calc(100vw - 24px));
+    }
+    .toast {
+      border-radius: 16px;
+      padding: 12px 14px;
+      background: rgba(18, 18, 26, 0.94);
+      border: 1px solid var(--line);
+      backdrop-filter: blur(16px);
+      font-size: 13px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    }
+    .toast.error { border-color: rgba(255, 93, 115, 0.5); }
+    .nav-btn { height: 52px; font-size: 12px; font-weight: 600; }
+    .muted { color: var(--muted); }
+    .is-hidden { display: none !important; }
+    .scroller { scrollbar-width: none; }
+    .scroller::-webkit-scrollbar { display: none; }
+    input[type="checkbox"] { accent-color: #14f195; width: 18px; height: 18px; }
+    @media (max-width: 1023px) {
+      .m-hide { display: none !important; }
+      .phone-blurb { display: none !important; }
+      .app-shell {
+        padding-top: calc(10px + env(safe-area-inset-top));
+        padding-left: max(12px, env(safe-area-inset-left));
+        padding-right: max(12px, env(safe-area-inset-right));
+        padding-bottom: calc(68px + env(safe-area-inset-bottom));
+      }
+      .app-shell > .mast,
+      .app-shell > .desk,
+      .app-shell > #view-book { margin-top: 0.5rem; }
+      .wallet-inner { padding: 12px; }
+      .wallet-card dl { margin-top: 0.5rem; }
+      body.is-phone .wallet-card { display: none !important; }
+      #connLabel { max-width: 7.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      #equity { font-size: 1.65rem; line-height: 1.1; }
+      .market-chip { min-width: 104px; padding: 6px 8px; }
+      #marketSub, #ticketHint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .tool, .tab, .chip-btn { min-height: 40px; }
+      .tag { min-height: 36px; display: inline-flex; align-items: center; }
+      .item .font-mono, #marketPrice { overflow-wrap: anywhere; }
+      #mobileNav {
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+      }
+      body.phone-chart .app-shell {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        height: 100dvh;
+        max-height: 100dvh;
+        overflow: auto;
+      }
+      body.phone-chart .app-shell > header,
+      body.phone-chart .mast { flex-shrink: 0; }
+      body.phone-chart .desk {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        min-height: 0;
+      }
+      body.phone-chart #view-chart {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+        margin-top: 0;
+      }
+      body.phone-chart #chartWrap {
+        flex: 1;
+        height: auto;
+        min-height: 0;
+        margin-top: 8px;
+      }
+      body.phone-chart #drawingChips:empty { display: none; }
+      body.phone-trade .mast,
+      body.phone-book .mast { display: none !important; }
+      body.keyboard #mobileNav { display: none; }
+      body.keyboard .app-shell { padding-bottom: 24px; }
+      #modal { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+    }
+    @media (min-width: 1024px) {
+      #toasts { bottom: 16px; }
+      #installHint { left: auto; width: min(360px, calc(100vw - 32px)); bottom: 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="orb orb-a"></div>
+  <div class="orb orb-b"></div>
+  <div class="orb orb-c"></div>
+  <div class="app-shell relative z-10 mx-auto max-w-[1440px] px-3 pb-24 pt-3 lg:px-6 lg:pb-8">
+    <p id="fatal" class="is-hidden mb-3 rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm"></p>
+
+    <header class="flex items-center gap-2">
+      <div class="flex items-center gap-3">
+        <div class="logo" aria-hidden="true">V</div>
+        <div class="max-lg:hidden">
+          <p class="text-sm font-semibold tracking-[0.18em]">VELA</p>
+          <p class="text-[11px] muted">Paper desk · simulated fills</p>
+        </div>
+      </div>
+      <div class="min-w-0 flex-1 lg:hidden">
+        <p id="phoneEquity" class="truncate font-mono text-base font-semibold leading-none">$10,000.00</p>
+        <p id="phoneMeta" class="mt-1 truncate font-mono text-[10px] muted">Cash $10,000.00</p>
+      </div>
+      <div class="ml-auto flex shrink-0 items-center gap-2">
+        <div class="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+          <span id="connDot" data-kind="wait"></span>
+          <span id="connLabel" class="font-mono text-[11px]">Connecting</span>
+        </div>
+        <button id="resetBtn" type="button" class="chip-btn">Reset</button>
+      </div>
+    </header>
+
+    <section class="wallet-card mast mt-4">
+      <div class="wallet-inner px-4 py-4 sm:px-5">
+        <p class="text-[11px] uppercase tracking-[0.16em] muted">Paper wallet</p>
+        <div class="mt-1 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p id="equity" class="font-mono text-3xl font-semibold sm:text-4xl">$10,000.00</p>
+            <p id="equityDelta" class="mt-1 font-mono text-sm text-[#14f195]">+$0.00 · 0.00%</p>
+          </div>
+          <p class="phone-blurb max-w-xs text-[11px] leading-relaxed muted">Fully funded 1x paper book. Nothing here is routed to a wallet, CEX, or chain.</p>
+        </div>
+        <dl class="mt-4 grid grid-cols-3 gap-2 text-center sm:text-left">
+          <div>
+            <dt class="text-[10px] uppercase tracking-wider muted">Cash</dt>
+            <dd id="cash" class="font-mono text-sm">$10,000.00</dd>
+          </div>
+          <div>
+            <dt class="text-[10px] uppercase tracking-wider muted">Margin</dt>
+            <dd id="marginUsed" class="font-mono text-sm">$0.00</dd>
+          </div>
+          <div>
+            <dt class="text-[10px] uppercase tracking-wider muted">Unrealized</dt>
+            <dd id="unrealized" class="font-mono text-sm">$0.00</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="glass mast mt-4 rounded-3xl p-3">
+      <div id="watchlist" class="scroller flex gap-2 overflow-x-auto"></div>
+      <form id="caForm" class="mt-3">
+        <label class="text-xs font-semibold" for="caInput">Trade a coin with paper cash</label>
+        <p class="phone-blurb mt-1 text-[11px] muted">Paste a Solana or Ethereum contract. The fill spends the fake balance above, not a wallet.</p>
+        <div class="mt-2 flex gap-2">
+          <input id="caInput" class="field min-w-0" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" placeholder="Paste contract address" />
+          <button id="caSubmit" class="shrink-0 px-3 sm:w-40" type="submit">Trade coin</button>
+        </div>
+      </form>
+      <label id="pairWrap" class="is-hidden mt-2 block text-[11px] muted">
+        Pool
+        <select id="pairSelect" class="field mt-1"></select>
+      </label>
+    </section>
+
+    <div class="desk mt-4 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-4">
+      <section id="view-chart" class="glass rounded-3xl p-3 sm:p-4">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <h2 id="marketName" class="max-w-full truncate text-lg font-semibold">Bitcoin</h2>
+            <span id="marketPrice" class="font-mono text-lg">—</span>
+            <span id="marketChange" class="font-mono text-sm">—</span>
+          </div>
+          <p id="marketSub" class="text-xs muted">BTCUSDT</p>
+        </div>
+        <div class="mt-2 flex flex-wrap items-center gap-1.5">
+          <div id="intervalRow" class="flex flex-wrap gap-1.5"></div>
+          <div id="drawTools" class="flex flex-wrap gap-1.5"></div>
+        </div>
+        <p id="drawHint" class="phone-blurb mt-2 text-[11px] muted">Crosshair</p>
+
+        <div id="chartWrap" class="relative mt-3 overflow-hidden rounded-2xl border border-white/5 bg-black/20">
+          <div id="chart"></div>
+          <canvas id="overlay"></canvas>
+          <div id="ohlcLegend" class="pointer-events-none absolute left-3 top-2 z-10 font-mono text-[11px] muted"></div>
+          <div id="chartLoading" class="is-hidden absolute inset-0 z-20 flex items-center justify-center bg-black/30 text-xs">Loading candles…</div>
+          <p id="chartMessage" class="is-hidden pointer-events-none absolute inset-0 z-20 items-center justify-center px-6 text-center text-sm muted"></p>
+        </div>
+        <div id="drawingChips" class="mt-2 flex flex-wrap gap-1.5"></div>
+      </section>
+
+      <section id="view-trade" class="glass m-hide mt-4 rounded-3xl p-4 lg:sticky lg:top-4 lg:mt-0 lg:max-h-[calc(100vh-2rem)] lg:overflow-auto">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-semibold uppercase tracking-[0.14em] muted">Paper ticket</h2>
+          <span id="ticketSymbol" class="font-mono text-sm">BTC</span>
+        </div>
+        <p id="ticketHint" class="mt-1 text-[11px] muted">Buy and sell with paper cash.</p>
+        <div id="sideToggle" class="mt-3 grid grid-cols-2 gap-2">
+          <button type="button" class="side-btn is-on" data-side="long">Long</button>
+          <button type="button" class="side-btn" data-side="short">Short</button>
+        </div>
+        <div id="typeToggle" class="mt-2 grid grid-cols-2 gap-2">
+          <button type="button" class="type-btn is-on" data-type="market">Market</button>
+          <button type="button" class="type-btn" data-type="limit">Limit</button>
+        </div>
+        <label class="mt-3 block text-xs muted" for="sizeUsd">Size (USDT)
+          <span class="mt-1 flex gap-2">
+            <input id="sizeUsd" class="field" inputmode="decimal" autocomplete="off" autocapitalize="off" autocorrect="off" value="500" />
+            <button id="sizeMax" type="button" class="chip-btn px-3">Max</button>
+          </span>
+        </label>
+        <p id="buyingPower" class="mt-1 font-mono text-[11px] muted">Buying power $10,000.00</p>
+        <div id="sizePresets" class="mt-2 flex flex-wrap gap-1.5">
+          <button type="button" class="mini" data-size="100">$100</button>
+          <button type="button" class="mini" data-size="250">$250</button>
+          <button type="button" class="mini" data-size="1000">$1,000</button>
+        </div>
+        <label id="limitWrap" class="is-hidden mt-3 block text-xs muted" for="limitPrice">Limit price
+          <input id="limitPrice" class="field mt-1" inputmode="decimal" autocomplete="off" autocapitalize="off" autocorrect="off" />
+        </label>
+        <div class="mt-3 grid grid-cols-2 gap-2">
+          <label class="text-xs muted" for="tpPrice">Take profit
+            <input id="tpPrice" class="field mt-1" inputmode="decimal" autocomplete="off" autocapitalize="off" autocorrect="off" placeholder="Price" />
+          </label>
+          <label class="text-xs muted" for="slPrice">Stop loss
+            <input id="slPrice" class="field mt-1" inputmode="decimal" autocomplete="off" autocapitalize="off" autocorrect="off" placeholder="Price" />
+          </label>
+        </div>
+        <div id="bracketPresets" class="mt-2 flex flex-wrap gap-1.5">
+          <button type="button" class="mini" data-bracket="tp" data-pct="0.02">TP +2%</button>
+          <button type="button" class="mini" data-bracket="tp" data-pct="0.05">TP +5%</button>
+          <button type="button" class="mini" data-bracket="sl" data-pct="0.01">SL 1%</button>
+          <button type="button" class="mini" data-bracket="sl" data-pct="0.02">SL 2%</button>
+        </div>
+        <label class="mt-4 flex items-center justify-between gap-3 text-sm" for="trailEnabled">
+          <span>Trailing stop</span>
+          <input id="trailEnabled" type="checkbox" />
+        </label>
+        <label id="trailWrap" class="is-hidden mt-2 block text-xs muted" for="trailPct">Distance %
+          <input id="trailPct" class="field mt-1" inputmode="decimal" autocomplete="off" autocapitalize="off" autocorrect="off" value="1.5" />
+        </label>
+        <div class="mt-4">
+          <p class="text-xs muted">Trade tags</p>
+          <div id="tagRow" class="mt-2 flex flex-wrap gap-1.5"></div>
+          <form id="tagForm" class="mt-2 flex gap-2">
+            <input id="tagInput" class="field" maxlength="18" placeholder="#Custom" autocomplete="off" autocapitalize="off" autocorrect="off" />
+            <button class="chip-btn px-3" type="submit">Add</button>
+          </form>
+        </div>
+        <button id="submitOrder" class="long mt-4 w-full" type="button">Buy / Long</button>
+        <p class="phone-blurb mt-3 text-[11px] leading-relaxed muted">Targets, stops, and the trail paint on the chart before you send. Limits fill at the live price once touched. Brackets fill at the trigger.</p>
+      </section>
+    </div>
+
+    <section id="view-book" class="glass m-hide mt-4 rounded-3xl p-3 sm:p-4">
+      <div id="tabRow" class="scroller flex gap-1.5 overflow-x-auto">
+        <button type="button" class="tab is-on px-3" data-tab="positions">Positions <span id="posCount">0</span></button>
+        <button type="button" class="tab px-3" data-tab="orders">Orders <span id="ordCount">0</span></button>
+        <button type="button" class="tab px-3" data-tab="journal">Journal</button>
+        <button type="button" class="tab px-3" data-tab="analytics">Analytics</button>
+      </div>
+      <div id="panel-positions" class="mt-3"></div>
+      <div id="panel-orders" class="is-hidden mt-3"></div>
+      <div id="panel-journal" class="is-hidden mt-3"></div>
+      <div id="panel-analytics" class="is-hidden mt-3"></div>
+    </section>
+  </div>
+
+  <nav id="mobileNav" class="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-white/10 bg-[#0c0b12]/95 backdrop-blur lg:hidden">
+    <button type="button" class="nav-btn is-on" data-nav="chart">Chart</button>
+    <button type="button" class="nav-btn" data-nav="trade">Trade</button>
+    <button type="button" class="nav-btn" data-nav="book">Book</button>
+    <button type="button" class="nav-btn" data-nav="stats">Stats</button>
+  </nav>
+
+  <div id="installHint" class="is-hidden glass rounded-3xl">
+    <p id="installText" class="text-sm leading-relaxed"></p>
+    <div class="mt-3 flex gap-2">
+      <button id="installGo" type="button" class="is-hidden h-11 flex-1 rounded-2xl bg-[#14f195] font-semibold text-[#042117]">Install</button>
+      <button id="installDismiss" type="button" class="chip-btn h-11 flex-1">Not now</button>
+    </div>
+  </div>
+
+  <div id="toasts" aria-live="polite"></div>
+
+  <div id="modal" class="is-hidden fixed inset-0 z-50 items-end justify-center bg-black/60 p-4 sm:items-center">
+    <div class="glass w-full max-w-sm rounded-3xl p-5" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h3 id="modalTitle" class="text-lg font-semibold">Reset paper account?</h3>
+      <p class="mt-2 text-sm muted">Open positions, working orders, and the journal are cleared. Markets and drawings stay. Cash returns to $10,000.</p>
+      <div class="mt-5 flex gap-2">
+        <button id="modalCancel" type="button" class="chip-btn h-11 flex-1">Cancel</button>
+        <button id="modalOk" type="button" class="h-11 flex-1 rounded-2xl bg-[#ff5d73] font-semibold text-[#2a0610]">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/lightweight-charts@4.2.1/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
