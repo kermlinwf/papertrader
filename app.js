@@ -1508,7 +1508,17 @@
     const phoneEquity = $('phoneEquity');
     const phoneMeta = $('phoneMeta');
     if (phoneEquity) phoneEquity.textContent = formatMoney(equity);
-    if (phoneMeta) phoneMeta.textContent = `Cash ${formatMoney(state.balance)} · ${signedMoney(u)} open`;
+    if (phoneMeta) {
+      if (state.positions.length) {
+        phoneMeta.textContent = `${signedMoney(u)} right now`;
+        phoneMeta.style.color = u >= 0 ? '#14f195' : '#ff5d73';
+      } else {
+        phoneMeta.textContent = `Cash ${formatMoney(state.balance)}`;
+        phoneMeta.style.color = '';
+      }
+    }
+    paintOpenPnl(u);
+    paintPortfolio();
     const uEl = $('unrealized');
     uEl.textContent = signedMoney(u);
     uEl.style.color = u >= 0 ? '#14f195' : '#ff5d73';
@@ -1627,6 +1637,35 @@
       const name = drawing.type === 'fib' ? 'Fib' : 'Trend';
       return `<button type="button" class="mini" data-drop-drawing="${esc(drawing.id)}">${name} ${esc(formatPrice(drawing.a.price))} → ${esc(formatPrice(drawing.b.price))} ×</button>`;
     }).join('');
+  }
+
+  function paintOpenPnl(bookPnl) {
+    const activeId = state.active && state.active.id;
+    const mine = state.positions.filter((pos) => pos.marketId === activeId);
+    const pnl = mine.reduce((sum, pos) => sum + upnl(pos), 0);
+    const margin = mine.reduce((sum, pos) => sum + pos.margin, 0);
+    const px = activeId ? state.last[activeId] : NaN;
+    let text = '$0.00';
+    let sub = 'No open trade. A fill starts the live number.';
+    let color = '#9a96ad';
+    if (mine.length) {
+      const pct = margin ? (pnl / margin) * 100 : 0;
+      text = signedMoney(pnl);
+      sub = `${formatChange(pct)} on this coin${Number.isFinite(px) ? ` · mark ${formatPrice(px)}` : ''}`;
+      color = pnl >= 0 ? '#14f195' : '#ff5d73';
+    } else if (state.positions.length) {
+      text = signedMoney(bookPnl);
+      sub = 'Open profit is on another coin';
+      color = bookPnl >= 0 ? '#14f195' : '#ff5d73';
+    }
+    [['livePnl', 'livePnlSub'], ['ticketPnl', 'ticketPnlSub']].forEach(([valueId, subId]) => {
+      const valueEl = $(valueId);
+      const subEl = $(subId);
+      if (!valueEl || !subEl) return;
+      valueEl.textContent = text;
+      valueEl.style.color = color;
+      subEl.textContent = sub;
+    });
   }
 
   function renderTicket() {
@@ -1843,7 +1882,80 @@
         <span class="font-mono text-sm" style="color:${row.pnl >= 0 ? '#14f195' : '#ff5d73'}">${signedMoney(row.pnl)}</span>
       </button>`;
     }).join('') : '<p class="item text-sm muted">Tag a ticket with #FOMO, #Breakout, or #Reversal. Win rate by tag shows up after the first close.</p>';
+    const equity = equityNow();
+    const open = unrealized();
+    const bars = ['#14f195', '#ab9ff2', '#7c8cff', '#f7d154', '#ff8fa3', '#5eead4'];
+    const ranked = state.positions.slice().sort((a, b) => (b.margin + upnl(b)) - (a.margin + upnl(a)));
+    const holdings = ranked.length ? ranked.map((pos, index) => {
+      const pnl = upnl(pos);
+      const value = pos.margin + pnl;
+      const share = equity > 0 ? (value / equity) * 100 : 0;
+      const color = bars[index % bars.length];
+      return `<button type="button" class="item w-full text-left" data-port="${esc(pos.id)}" data-port-market="${esc(pos.marketId)}">
+        <span class="flex items-start justify-between gap-3">
+          <span>
+            <span class="flex items-center gap-2">
+              <span class="font-semibold">${esc(pos.symbol)}</span>
+              <span class="pill ${pos.side}">${pos.side === 'long' ? 'Long' : 'Short'}</span>
+            </span>
+            <span class="mt-1 block font-mono text-[11px] muted">${formatQty(pos.qty)} @ ${formatPrice(pos.entry)}</span>
+          </span>
+          <span class="text-right">
+            <span class="block font-mono text-sm" data-port-value>${formatMoney(value)}</span>
+            <span class="mt-1 block font-mono text-[11px]" data-port-pnl style="color:${pnl >= 0 ? '#14f195' : '#ff5d73'}">${signedMoney(pnl)}</span>
+          </span>
+        </span>
+        <span class="mt-2 flex items-center gap-2">
+          <span class="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
+            <span class="block h-full rounded-full" data-port-bar style="width:${Math.max(2, Math.min(100, share))}%;background:${color}"></span>
+          </span>
+          <span class="font-mono text-[11px] muted" data-port-share>${share.toFixed(1)}%</span>
+        </span>
+      </button>`;
+    }).join('') : '<p class="item text-sm muted">No coins yet. A fill shows up here with its live value and share of the account.</p>';
+    const cashShare = equity > 0 ? (state.balance / equity) * 100 : 100;
     $('panel-analytics').innerHTML = `
+      <section class="wallet-card">
+        <div class="wallet-inner px-4 py-4">
+          <p class="text-[11px] uppercase tracking-[0.16em] muted">Portfolio</p>
+          <p id="portEquity" class="mt-1 font-mono text-3xl font-semibold">${formatMoney(equity)}</p>
+          <p id="portDelta" class="mt-1 font-mono text-sm" style="color:${(equity - state.startBalance) >= 0 ? '#14f195' : '#ff5d73'}">${signedMoney(equity - state.startBalance)} · ${formatChange(state.startBalance ? ((equity - state.startBalance) / state.startBalance) * 100 : 0)} since start</p>
+          <dl class="mt-4 grid grid-cols-3 gap-2 text-center">
+            <div>
+              <dt class="text-[10px] uppercase tracking-wider muted">Cash</dt>
+              <dd id="portCash" class="font-mono text-sm">${formatMoney(state.balance)}</dd>
+            </div>
+            <div>
+              <dt class="text-[10px] uppercase tracking-wider muted">In coins</dt>
+              <dd id="portInvested" class="font-mono text-sm">${formatMoney(state.positions.reduce((sum, pos) => sum + pos.margin, 0))}</dd>
+            </div>
+            <div>
+              <dt class="text-[10px] uppercase tracking-wider muted">Open</dt>
+              <dd id="portOpen" class="font-mono text-sm" style="color:${open >= 0 ? '#14f195' : '#ff5d73'}">${signedMoney(open)}</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+      <div class="mt-4">
+        <div class="mb-2 flex items-center justify-between gap-2">
+          <h3 class="text-sm font-semibold">Holdings</h3>
+          <span class="font-mono text-[11px] muted">${ranked.length} coin${ranked.length === 1 ? '' : 's'}</span>
+        </div>
+        <div class="grid gap-2">${holdings}</div>
+        <div class="item mt-2">
+          <div class="flex items-center justify-between gap-3">
+            <span class="font-semibold">Cash</span>
+            <span class="font-mono text-sm" id="portCashRow">${formatMoney(state.balance)}</span>
+          </div>
+          <div class="mt-2 flex items-center gap-2">
+            <span class="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
+              <span class="block h-full rounded-full bg-white/50" data-port-cashbar style="width:${Math.max(0, Math.min(100, cashShare))}%"></span>
+            </span>
+            <span class="font-mono text-[11px] muted" data-port-cashshare>${cashShare.toFixed(1)}%</span>
+          </div>
+        </div>
+      </div>
+      <h3 class="mb-2 mt-5 text-sm font-semibold">Closed trades</h3>
       <div class="grid grid-cols-2 gap-2 lg:grid-cols-3">
         <div class="stat"><p class="text-[10px] uppercase tracking-wider muted">Trades</p><p class="mt-1 font-mono text-lg">${stats.n}</p></div>
         <div class="stat"><p class="text-[10px] uppercase tracking-wider muted">Win rate</p><p class="mt-1 font-mono text-lg">${stats.n ? `${stats.winRate.toFixed(0)}%` : '—'}</p></div>
@@ -1871,6 +1983,50 @@
           <p class="mt-2 text-[11px] muted">A close with several tags counts in each tag. Spot marks stream from Binance. Contract marks poll DexScreener.</p>
         </div>
       </div>`;
+  }
+
+  function paintPortfolio() {
+    const root = $('panel-analytics');
+    if (!root || !root.querySelector('#portEquity')) return;
+    const equity = equityNow();
+    const open = unrealized();
+    const delta = equity - state.startBalance;
+    const pct = state.startBalance ? (delta / state.startBalance) * 100 : 0;
+    const put = (id, text, color) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text;
+      if (color) el.style.color = color;
+    };
+    put('portEquity', formatMoney(equity));
+    put('portDelta', `${signedMoney(delta)} · ${formatChange(pct)} since start`, delta >= 0 ? '#14f195' : '#ff5d73');
+    put('portCash', formatMoney(state.balance));
+    put('portCashRow', formatMoney(state.balance));
+    put('portInvested', formatMoney(state.positions.reduce((sum, pos) => sum + pos.margin, 0)));
+    put('portOpen', signedMoney(open), open >= 0 ? '#14f195' : '#ff5d73');
+    state.positions.forEach((pos) => {
+      const row = root.querySelector(`[data-port="${cssEscape(pos.id)}"]`);
+      if (!row) return;
+      const pnl = upnl(pos);
+      const value = pos.margin + pnl;
+      const share = equity > 0 ? (value / equity) * 100 : 0;
+      const pnlEl = row.querySelector('[data-port-pnl]');
+      const valueEl = row.querySelector('[data-port-value]');
+      const bar = row.querySelector('[data-port-bar]');
+      const shareEl = row.querySelector('[data-port-share]');
+      if (pnlEl) {
+        pnlEl.textContent = signedMoney(pnl);
+        pnlEl.style.color = pnl >= 0 ? '#14f195' : '#ff5d73';
+      }
+      if (valueEl) valueEl.textContent = formatMoney(value);
+      if (shareEl) shareEl.textContent = `${share.toFixed(1)}%`;
+      if (bar) bar.style.width = `${Math.max(2, Math.min(100, share))}%`;
+    });
+    const cashShare = equity > 0 ? (state.balance / equity) * 100 : 100;
+    const cashBar = root.querySelector('[data-port-cashbar]');
+    const cashShareEl = root.querySelector('[data-port-cashshare]');
+    if (cashBar) cashBar.style.width = `${Math.max(0, Math.min(100, cashShare))}%`;
+    if (cashShareEl) cashShareEl.textContent = `${cashShare.toFixed(1)}%`;
   }
 
   function renderAll() {
@@ -1911,16 +2067,19 @@
 
   function setMobileView(view) {
     state.mobileView = view;
-    const section = view === 'stats' ? 'book' : view;
-    ['chart', 'trade', 'book'].forEach((name) => {
-      $('view-' + name).classList.toggle('m-hide', name !== section);
-    });
+    const phone = window.matchMedia('(max-width: 1023px)').matches;
+    $('view-chart').classList.toggle('m-hide', phone && view !== 'chart' && view !== 'trade');
+    $('view-trade').classList.toggle('m-hide', phone && view !== 'trade');
+    $('view-book').classList.toggle('m-hide', phone && view !== 'book' && view !== 'stats');
     if (view === 'stats') setTab('analytics');
     if (view === 'book' && state.tab === 'analytics') setTab('positions');
     syncPhoneLayout();
     paintNav();
-    if (window.matchMedia('(max-width: 1023px)').matches) window.scrollTo(0, 0);
-    requestAnimationFrame(resizeChart);
+    if (phone) window.scrollTo(0, 0);
+    requestAnimationFrame(() => {
+      resizeChart();
+      requestAnimationFrame(resizeChart);
+    });
   }
 
   function paintNav() {
@@ -2305,6 +2464,15 @@
       renderJournal();
     });
     $('panel-analytics').addEventListener('click', (event) => {
+      const holding = event.target.closest('[data-port-market]');
+      if (holding) {
+        const market = findMarket(holding.dataset.portMarket);
+        if (market) {
+          setActive(market);
+          if (window.innerWidth < 1024) setMobileView('trade');
+        }
+        return;
+      }
       const month = event.target.closest('[data-month]');
       if (month && !month.disabled) {
         const delta = Number(month.dataset.month);

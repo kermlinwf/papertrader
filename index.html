@@ -269,7 +269,7 @@
       .app-shell > #view-book { margin-top: 0.5rem; }
       .wallet-inner { padding: 12px; }
       .wallet-card dl { margin-top: 0.5rem; }
-      body.is-phone .wallet-card { display: none !important; }
+      body.is-phone .mast.wallet-card { display: none !important; }
       #connLabel { max-width: 7.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       #equity { font-size: 1.65rem; line-height: 1.1; }
       .market-chip { min-width: 104px; padding: 6px 8px; }
@@ -315,6 +315,9 @@
       body.phone-chart #drawingChips:empty { display: none; }
       body.phone-trade .mast,
       body.phone-book .mast { display: none !important; }
+      body.phone-trade #chartWrap { height: 240px; min-height: 240px; }
+      body.phone-trade #drawTools,
+      body.phone-trade #drawingChips { display: none !important; }
       body.keyboard #mobileNav { display: none; }
       body.keyboard .app-shell { padding-bottom: 24px; }
       #modal { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
@@ -408,6 +411,8 @@
             <span id="marketChange" class="font-mono text-sm">—</span>
           </div>
           <p id="marketSub" class="text-xs muted">BTCUSDT</p>
+          <p id="livePnl" class="mt-2 font-mono text-2xl font-semibold leading-none">$0.00</p>
+          <p id="livePnlSub" class="mt-1 text-[11px] muted">No open trade</p>
         </div>
         <div class="mt-2 flex flex-wrap items-center gap-1.5">
           <div id="intervalRow" class="flex flex-wrap gap-1.5"></div>
@@ -431,6 +436,11 @@
           <span id="ticketSymbol" class="font-mono text-sm">BTC</span>
         </div>
         <p id="ticketHint" class="mt-1 text-[11px] muted">Buy and sell with paper cash.</p>
+        <div class="mt-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
+          <p class="text-[10px] uppercase tracking-wider muted">Open profit</p>
+          <p id="ticketPnl" class="mt-1 font-mono text-3xl font-semibold leading-none">$0.00</p>
+          <p id="ticketPnlSub" class="mt-1 text-[11px] muted">No open trade on this coin</p>
+        </div>
         <div id="sideToggle" class="mt-3 grid grid-cols-2 gap-2">
           <button type="button" class="side-btn is-on" data-side="long">Long</button>
           <button type="button" class="side-btn" data-side="short">Short</button>
@@ -493,7 +503,7 @@
         <button type="button" class="tab is-on px-3" data-tab="positions">Positions <span id="posCount">0</span></button>
         <button type="button" class="tab px-3" data-tab="orders">Orders <span id="ordCount">0</span></button>
         <button type="button" class="tab px-3" data-tab="journal">Journal</button>
-        <button type="button" class="tab px-3" data-tab="analytics">Analytics</button>
+        <button type="button" class="tab px-3" data-tab="analytics">Portfolio</button>
       </div>
       <div id="panel-positions" class="mt-3"></div>
       <div id="panel-orders" class="is-hidden mt-3"></div>
@@ -506,7 +516,7 @@
     <button type="button" class="nav-btn is-on" data-nav="chart">Chart</button>
     <button type="button" class="nav-btn" data-nav="trade">Trade</button>
     <button type="button" class="nav-btn" data-nav="book">Book</button>
-    <button type="button" class="nav-btn" data-nav="stats">Stats</button>
+    <button type="button" class="nav-btn" data-nav="stats">Portfolio</button>
   </nav>
 
   <div id="installHint" class="is-hidden glass rounded-3xl">
